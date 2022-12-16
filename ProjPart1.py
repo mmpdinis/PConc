@@ -19,7 +19,9 @@ watermarkLOC="watermark.png"
 # recolhe os endereços das imagens e cria as threads de acordo
 
 def ap_paralelo_1():
+    
     global lista, path
+    
     initalize()
     lista=readtxt(path)
     createThreads(numeroThreads)
@@ -31,27 +33,31 @@ def ap_paralelo_1():
 # a diretoria das imagens requeridas
 
 def initalize():
+    
     print("Select Image Folder")
     global path, numeroThreads, dimensoes, tamanho
 
     # Abre uma janela em que se navega até à diretoria em
     # que se econtram as imagens e o ficheiro .txt, 
     # guardando-se o path
+    
     path = askdirectory(title='Select Folder')
 
-    
     while numeroThreads<=0:
         numeroThreads=int(input("Number of Threads?:\n"))
         if numeroThreads<=0:
             print("Invalid number of Threads")
 
     # A dimensao referente a imagem redimensionada
+    
     dimensoes=int(input("Resize to which size? (px):\n"))
 
     # A dimensao da thumbnail
+    
     tamanho=int(input("Thumbnail to which size? (px):\n"))
 
     # Apenas criamos as novas pastas se estas nao existirem
+    
     if not os.path.exists(path+"/Watermark-dir"):
         os.mkdir(path+"/Watermark-dir")
     if not os.path.exists(path+"/Resize-dir"):
@@ -69,7 +75,6 @@ def readtxt(path):
     res=[]
 
     f= open(path+"/image-list.txt", "r")
-
     with f as texto:
         for line in texto:
             res+=[line.replace("\n", "")]
@@ -86,19 +91,20 @@ def readtxt(path):
 def createThreads(n):
 
     global lista, listacopy
-
+    
     listacopy=lista.copy()
-
     listaThreads=[]
 
     for i in range(n):
 
         # Cria-se e inicializa-se uma Thread
+        
         newThread = Thread(target=threadFunc)
         newThread.name = "Processa_ficheiro("+ str(i)+")"
         newThread.start()
 
         # Uma lista de Threads e criada para posterior finalizacao
+        
         listaThreads+=[newThread]
 
     for item in listaThreads:
@@ -106,9 +112,16 @@ def createThreads(n):
 
 
 
+
+# Com base no metodo "resize" as imagens alteram a sua largura 
+# para a dimensão indicada, mantendo a relação largura-altura 
+# da imagem original
+
 def resize(imagem, new_width):
+    
     try:
         copy= Image.open(imagem)
+        
         try:
             dimensoes = (new_width,math.ceil(new_width *1.0/copy.size[0] * copy.size[1]))
             copy=copy.resize(dimensoes)
@@ -116,52 +129,88 @@ def resize(imagem, new_width):
         except Exception as e:
             print(e)
             return None
+        
     except Exception as e:
         print(e)
         return None
 
+
+
+
+# Com base no método "paste" a watermark e colocada no canto superior
+# esquerdo da imagem original, sendo a sua largura ajustada para
+# corresponder a 1/3 da largura da imagem a que se pretende aplicar
+
 def watermark(imagem):
+    
     global watermarkLOC
+    
     try:
         imagem=Image.open(imagem)
+        
         try:
-            # image watermark
+            
+            # Ajustamento da largura da watermark
+            
             position=(0,0) 
             crop_image = resize(watermarkLOC, math.ceil(imagem.size[0]/3))
             
-            # add watermark
+            # Colocaçao da watermark
+            
             copied_image = imagem.copy()
             copied_image.paste(crop_image, position, crop_image)
             return copied_image
         except Exception as e:
             print(e)
             return None
+        
     except Exception as e:
         print(e)
         return None
+    
+
+
+
+# Com base no método "thumbnail" a imagem e redimensionada para o
+# tamanho indicado (convertendo para este tamanho a dimensao de maior 
+# grau). De seguida a imagem é cortada centralmente, de modo a que
+# se torne um quadrado com dimensoes iguais ao tamanho indicado
 
 def thumbnail(ficheiro, tamanho):
+    
     tamanho = math.ceil(tamanho)
     if tamanho < 1:
         print("dimensao thumbnail invalida")
         return None
+    
     try:
         imagem=Image.open(ficheiro)
+        
         try:
             width, height = imagem.size
+            
+            # Escolha da maior dimensao e conversao para a dimensao contraria
+            
             if(width > height):
                 new_height = tamanho
                 new_width = math.ceil(new_height *1.0/height * width)
             else:
                 new_width = tamanho
                 new_height = math.ceil(new_width *1.0/width * height)
+                
+            # Redimensionamento da imagem
+            
             imagem.thumbnail((new_width,new_height))
+            
+            # Corte central quadrado
+            
             corte = (math.ceil(new_width/2-tamanho/2),math.ceil(new_height/2-tamanho/2),math.ceil(new_width/2+tamanho/2),math.ceil(new_height/2+tamanho/2))
             imagem = imagem.crop(corte)
             return imagem
         except Exception as e:
             print(e)
             return None
+        
     except Exception as e:
         print(e)
         return None
@@ -179,13 +228,11 @@ def threadFunc():
     global dimensoes
     global tamanho
 
-
     # Enquanto a listacopy contiver enderecos de imagens para processar,
     # a Thread continua ativa
 
     while len(listacopy)>0:
         
-
         # O último dos seus elementos é usado 
 
         imagem= listacopy.pop()
@@ -209,6 +256,7 @@ def threadFunc():
             print("resize de "+imagem.split(".")[0]+": encontrado")
 
     return
+
 
 
 
